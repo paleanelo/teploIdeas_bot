@@ -5,11 +5,11 @@ import { helpCommand } from "./commands/help.js";
 import { ideasCommand, handleCategorySelection, handleRetry, handleBack } from "./commands/ideas.js";
 import { errorHandler, unknownCommandHandler, textInputHandler } from "./middlewares/errorHandler.js";
 
-config(); // Загружаем переменные из .env
+config();
 
 const bot = new Bot(process.env.BOT_TOKEN);
 
-// Устанавливаем список доступных команд
+// Список доступных команд
 bot.api.setMyCommands([
     { command: "start", description: "Запустить бота" },
     { command: "help", description: "Помощь по командам" },
@@ -29,8 +29,6 @@ bot.callbackQuery(/category:.+/, handleCategorySelection);
 bot.callbackQuery("retry", handleRetry);
 bot.callbackQuery("back", handleBack);
 
-
-
 bot.on("message:text", async (ctx) => {
     if (ctx.message.text.startsWith("/")) {
         await unknownCommandHandler(ctx);
@@ -39,10 +37,26 @@ bot.on("message:text", async (ctx) => {
     }
 });
 
-
-
 // Обработчик ошибок
 bot.catch(errorHandler);
 
 bot.start();
 console.log("Бот запущен!");
+
+
+
+
+// Часть кода для развёртывания на сервере (при необходимости можно удалить)
+import express from 'express';
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+app.get('/', (req, res) => {
+    res.send('Bot is running!');
+});
+
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+});
+
