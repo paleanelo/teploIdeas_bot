@@ -9,13 +9,14 @@ const categories = Object.keys(ideas);
 const categoryKeyboard = new InlineKeyboard();
 categories.forEach((category, index) => {
     categoryKeyboard.text(category, `category:${category}`);
-    if ((index + 1) % 2 === 0) categoryKeyboard.row();
+    if ((index + 1) % 2 === 0) categoryKeyboard.row(); // Делаем кнопки в 2 столбца
 });
 
 // Функция обработки команды /ideas
 export function ideasCommand(ctx) {
     ctx.reply(
-        "🎨 Я помогу тебе избавиться от боязни белого листа и сгенерирую идею для выбранного направления.\n\nВыбери одно из направлений ниже:",
+        "🎨 Я помогу тебе избавиться от боязни белого листа и сгенерирую идею для выбранного направления.\n\n" +
+        "Выбери одно из направлений ниже:",
         { reply_markup: categoryKeyboard }
     );
 }
@@ -23,25 +24,36 @@ export function ideasCommand(ctx) {
 // Обработчик выбора категории
 export async function handleCategorySelection(ctx) {
     const category = ctx.match[0].split(":")[1];
-    ctx.session.selectedCategory = category;
+    ctx.session.selectedCategory = category; // Сохраняем категорию в сессии
 
     const randomIdea = ideas[category][Math.floor(Math.random() * ideas[category].length)];
+
     const actionKeyboard = new InlineKeyboard()
         .text("🔄 Попробовать ещё", "retry")
         .text("Назад", "back");
 
     try {
-        const message = await ctx.editMessageText(`✨ *Направление:* ${category}\n💡 *Идея:* ${randomIdea}`, {
-            reply_markup: actionKeyboard,
-            parse_mode: "Markdown",
-        });
-        ctx.session.lastMessageId = message.message_id; // Сохраняем ID сообщения
-    } catch {
+        // Проверяем, есть ли предыдущее сообщение
+        if (ctx.session.lastMessageId) {
+            await ctx.api.editMessageText(ctx.chat.id, ctx.session.lastMessageId, 
+                `✨ *Направление:* ${category}\n💡 *Идея:* ${randomIdea}`, {
+                reply_markup: actionKeyboard,
+                parse_mode: "Markdown",
+            });
+        } else {
+            const newMsg = await ctx.reply(`✨ *Направление:* ${category}\n💡 *Идея:* ${randomIdea}`, {
+                reply_markup: actionKeyboard,
+                parse_mode: "Markdown",
+            });
+            ctx.session.lastMessageId = newMsg.message_id; // Сохраняем ID нового сообщения
+        }
+    } catch (error) {
+        console.error("Ошибка при редактировании сообщения:", error);
         const newMsg = await ctx.reply(`✨ *Направление:* ${category}\n💡 *Идея:* ${randomIdea}`, {
             reply_markup: actionKeyboard,
             parse_mode: "Markdown",
         });
-        ctx.session.lastMessageId = newMsg.message_id; // Сохраняем ID нового сообщения
+        ctx.session.lastMessageId = newMsg.message_id;
     }
 }
 
@@ -57,31 +69,36 @@ export async function handleRetry(ctx) {
         .text("🔄 Попробовать ещё", "retry")
         .text("Назад", "back");
 
-    // Проверяем, есть ли сохранённый lastMessageId
-    const messageId = ctx.session.lastMessageId || ctx.callbackQuery.message.message_id;
-
     try {
-        await ctx.api.editMessageText(ctx.chat.id, messageId, `✨ *Направление:* ${category}\n💡 *Идея:* ${randomIdea}`, {
-            reply_markup: actionKeyboard,
-            parse_mode: "Markdown",
-        });
-    } catch {
+        if (ctx.session.lastMessageId) {
+            await ctx.api.editMessageText(ctx.chat.id, ctx.session.lastMessageId, 
+                `✨ *Направление:* ${category}\n💡 *Идея:* ${randomIdea}`, {
+                reply_markup: actionKeyboard,
+                parse_mode: "Markdown",
+            });
+        } else {
+            const newMsg = await ctx.reply(`✨ *Направление:* ${category}\n💡 *Идея:* ${randomIdea}`, {
+                reply_markup: actionKeyboard,
+                parse_mode: "Markdown",
+            });
+            ctx.session.lastMessageId = newMsg.message_id;
+        }
+    } catch (error) {
+        console.error("Ошибка при редактировании сообщения:", error);
         const newMsg = await ctx.reply(`✨ *Направление:* ${category}\n💡 *Идея:* ${randomIdea}`, {
             reply_markup: actionKeyboard,
             parse_mode: "Markdown",
         });
-        ctx.session.lastMessageId = newMsg.message_id; // Обновляем ID сообщения
+        ctx.session.lastMessageId = newMsg.message_id;
     }
 }
 
 // Обработчик кнопки "Назад"
 export async function handleBack(ctx) {
-    ctx.session.selectedCategory = null;
-
-    const messageId = ctx.session.lastMessageId || ctx.callbackQuery.message.message_id;
+    ctx.session.selectedCategory = null; // Очищаем категорию
 
     try {
-        await ctx.api.editMessageText(ctx.chat.id, messageId, 
+        await ctx.api.editMessageText(ctx.chat.id, ctx.session.lastMessageId, 
             "🎨 Я помогу тебе избавиться от боязни белого листа и сгенерирую идею для выбранного направления.\n\nВыбери одно из направлений ниже:", { 
             reply_markup: categoryKeyboard 
         });
