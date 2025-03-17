@@ -30,10 +30,24 @@ export async function handleCategorySelection(ctx) {
         .text("🔄 Попробовать ещё", "retry")
         .text("Назад", "back");
 
-    await ctx.reply(`✨ *Направление:* ${category}\n💡 *Идея:* ${randomIdea}`, {
+    // Если есть предыдущее сообщение, убираем у него кнопки
+    if (ctx.session.lastIdeaMessageId) {
+        try {
+            await ctx.api.editMessageText(ctx.chat.id, ctx.session.lastIdeaMessageId, `✨ *Направление:* ${category}\n💡 *Идея:* ${randomIdea}`, {
+                parse_mode: "Markdown",
+            });
+        } catch (error) {
+            console.error("Ошибка при удалении кнопок у предыдущего сообщения:", error);
+        }
+    }
+
+    // Отправляем новое сообщение с кнопками
+    const newMsg = await ctx.reply(`✨ *Направление:* ${category}\n💡 *Идея:* ${randomIdea}`, {
         reply_markup: actionKeyboard,
         parse_mode: "Markdown",
     });
+
+    ctx.session.lastIdeaMessageId = newMsg.message_id; // Сохраняем ID последнего сообщения
 }
 
 // Обработчик кнопки "Попробовать ещё раз"
@@ -48,17 +62,45 @@ export async function handleRetry(ctx) {
         .text("🔄 Попробовать ещё", "retry")
         .text("Назад", "back");
 
-    await ctx.reply(`✨ *Направление:* ${category}\n💡 *Идея:* ${randomIdea}`, {
+    // Если есть предыдущее сообщение, убираем у него кнопки
+    if (ctx.session.lastIdeaMessageId) {
+        try {
+            await ctx.api.editMessageText(ctx.chat.id, ctx.session.lastIdeaMessageId, `✨ *Направление:* ${category}\n💡 *Идея:* ${randomIdea}`, {
+                parse_mode: "Markdown",
+            });
+        } catch (error) {
+            console.error("Ошибка при удалении кнопок у предыдущего сообщения:", error);
+        }
+    }
+
+    // Отправляем новое сообщение с кнопками
+    const newMsg = await ctx.reply(`✨ *Направление:* ${category}\n💡 *Идея:* ${randomIdea}`, {
         reply_markup: actionKeyboard,
         parse_mode: "Markdown",
     });
+
+    ctx.session.lastIdeaMessageId = newMsg.message_id; // Сохраняем ID последнего сообщения
 }
 
 // Обработчик кнопки "Назад"
 export async function handleBack(ctx) {
     ctx.session.selectedCategory = null;
 
-    await ctx.reply("🎨 Я помогу тебе избавиться от боязни белого листа и сгенерирую идею для выбранного направления.\n\nВыбери одно из направлений ниже:", { 
+    // Если есть предыдущее сообщение, убираем у него кнопки
+    if (ctx.session.lastIdeaMessageId) {
+        try {
+            await ctx.api.editMessageText(ctx.chat.id, ctx.session.lastIdeaMessageId, "🎨 Я помогу тебе избавиться от боязни белого листа и сгенерирую идею для выбранного направления.\n\nВыбери одно из направлений ниже:", {
+                parse_mode: "Markdown",
+            });
+        } catch (error) {
+            console.error("Ошибка при удалении кнопок у предыдущего сообщения:", error);
+        }
+    }
+
+    // Отправляем новое сообщение с кнопками
+    const newMsg = await ctx.reply("🎨 Я помогу тебе избавиться от боязни белого листа и сгенерирую идею для выбранного направления.\n\nВыбери одно из направлений ниже:", { 
         reply_markup: categoryKeyboard 
     });
+
+    ctx.session.lastIdeaMessageId = newMsg.message_id; // Сохраняем ID последнего сообщения
 }
