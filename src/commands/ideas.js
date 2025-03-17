@@ -30,19 +30,10 @@ export async function handleCategorySelection(ctx) {
         .text("🔄 Попробовать ещё", "retry")
         .text("Назад", "back");
 
-    try {
-        const message = await ctx.editMessageText(`✨ *Направление:* ${category}\n💡 *Идея:* ${randomIdea}`, {
-            reply_markup: actionKeyboard,
-            parse_mode: "Markdown",
-        });
-        ctx.session.lastMessageId = message.message_id; // Сохраняем ID сообщения
-    } catch {
-        const newMsg = await ctx.reply(`✨ *Направление:* ${category}\n💡 *Идея:* ${randomIdea}`, {
-            reply_markup: actionKeyboard,
-            parse_mode: "Markdown",
-        });
-        ctx.session.lastMessageId = newMsg.message_id; // Сохраняем ID нового сообщения
-    }
+    await ctx.reply(`✨ *Направление:* ${category}\n💡 *Идея:* ${randomIdea}`, {
+        reply_markup: actionKeyboard,
+        parse_mode: "Markdown",
+    });
 }
 
 // Обработчик кнопки "Попробовать ещё раз"
@@ -57,38 +48,17 @@ export async function handleRetry(ctx) {
         .text("🔄 Попробовать ещё", "retry")
         .text("Назад", "back");
 
-    // Проверяем, есть ли сохранённый lastMessageId
-    const messageId = ctx.session.lastMessageId || ctx.callbackQuery.message.message_id;
-
-    try {
-        await ctx.api.editMessageText(ctx.chat.id, messageId, `✨ *Направление:* ${category}\n💡 *Идея:* ${randomIdea}`, {
-            reply_markup: actionKeyboard,
-            parse_mode: "Markdown",
-        });
-    } catch {
-        const newMsg = await ctx.reply(`✨ *Направление:* ${category}\n💡 *Идея:* ${randomIdea}`, {
-            reply_markup: actionKeyboard,
-            parse_mode: "Markdown",
-        });
-        ctx.session.lastMessageId = newMsg.message_id; // Обновляем ID сообщения
-    }
+    await ctx.reply(`✨ *Направление:* ${category}\n💡 *Идея:* ${randomIdea}`, {
+        reply_markup: actionKeyboard,
+        parse_mode: "Markdown",
+    });
 }
 
 // Обработчик кнопки "Назад"
 export async function handleBack(ctx) {
     ctx.session.selectedCategory = null;
 
-    const messageId = ctx.session.lastMessageId || ctx.callbackQuery.message.message_id;
-
-    try {
-        await ctx.api.editMessageText(ctx.chat.id, messageId, 
-            "🎨 Я помогу тебе избавиться от боязни белого листа и сгенерирую идею для выбранного направления.\n\nВыбери одно из направлений ниже:", { 
-            reply_markup: categoryKeyboard 
-        });
-    } catch {
-        const newMsg = await ctx.reply("🎨 Я помогу тебе избавиться от боязни белого листа и сгенерирую идею для выбранного направления.\n\nВыбери одно из направлений ниже:", { 
-            reply_markup: categoryKeyboard 
-        });
-        ctx.session.lastMessageId = newMsg.message_id; // Сохраняем ID нового сообщения
-    }
+    await ctx.reply("🎨 Я помогу тебе избавиться от боязни белого листа и сгенерирую идею для выбранного направления.\n\nВыбери одно из направлений ниже:", { 
+        reply_markup: categoryKeyboard 
+    });
 }
