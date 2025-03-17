@@ -5,7 +5,7 @@ import { InlineKeyboard } from "grammy";
 // Загружаем идеи из JSON
 const ideas = JSON.parse(fs.readFileSync("src/data/ideas.json", "utf-8"));
 
-const IMAGE_FOLDER = path.join(process.cwd(), "images");
+const IMAGE_FOLDER = path.resolve("images");
 
 // Создаём кнопки с направлениями
 const categories = Object.keys(ideas);
@@ -44,12 +44,12 @@ async function sendIdea(ctx, category) {
         .text("Назад", "back");
 
     // Проверяем, является ли идея изображением
-    const imagePath = path.resolve("images", randomIdea);
+    const imagePath = path.join(IMAGE_FOLDER, randomIdea);
     if (fs.existsSync(imagePath)) {
         try {
-            // Отправляем изображение
+            const imageBuffer = fs.readFileSync(imagePath); // Читаем файл как Buffer
             const newMsg = await ctx.replyWithPhoto(
-                { source: imagePath },
+                { source: imageBuffer }, // Отправляем как Buffer
                 {
                     caption: "Вот фото для вдохновения, попробуй повторить идею",
                     reply_markup: actionKeyboard,
@@ -57,8 +57,8 @@ async function sendIdea(ctx, category) {
             );
             ctx.session.lastIdeaMessageId = newMsg.message_id;
         } catch (error) {
-            console.error("Ошибка при отправке фото:", error);
-            await ctx.reply("Не удалось отправить изображение. Попробуйте снова.", {
+            console.error("❌ Ошибка при отправке фото:", error);
+            await ctx.reply("⚠️ Не удалось отправить изображение. Попробуйте снова.", {
                 reply_markup: actionKeyboard,
             });
         }
