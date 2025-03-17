@@ -39,34 +39,35 @@ export async function handleCategorySelection(ctx, categoryFromRetry = null) {
     console.log("ctx.match:", ctx.match);
     console.log("Session category before selection:", ctx.session.selectedCategory);
 
-    const category = categoryFromRetry || ctx.match?.input?.split(":")[1] || ctx.session.selectedCategory;
-    console.log("Selected category:", category);
+    // Исправленный парсинг категории
+    const categoryRaw = categoryFromRetry || ctx.match?.input?.split(":")[1] || ctx.session.selectedCategory;
+    console.log("Raw category value:", categoryRaw);
+    const category = typeof categoryRaw === "string" ? decodeURIComponent(categoryRaw) : null;
+    console.log("Decoded category:", category);
 
-    if (!category || !ideas[decodeURIComponent(category)]) {
+    if (!category || !ideas[category]) {
         return ctx.reply("❌ Ошибка: категория не выбрана или не существует.");
     }
 
-    ctx.session.selectedCategory = decodeURIComponent(category);
+    ctx.session.selectedCategory = category;
 
     // Выбираем случайный элемент (идея или file_id)
-    const randomItem = ideas[ctx.session.selectedCategory][Math.floor(Math.random() * ideas[ctx.session.selectedCategory].length)];
+    const randomItem = ideas[category][Math.floor(Math.random() * ideas[category].length)];
     console.log("Randomly selected item:", randomItem);
 
     let newMsg;
     if (/^[A-Za-z0-9_-]{30,}$/.test(randomItem)) {
-        // Это file_id, значит отправляем фото
         await removeOldButtons(ctx);
         newMsg = await ctx.replyWithPhoto(randomItem, {
             caption: "Вот фото для вдохновения, попробуй повторить эту идею! 📸",
         });
     } else {
-        // Это текстовая идея
         const actionKeyboard = new InlineKeyboard()
             .text("🔄 Попробовать ещё", "retry")
             .text("Назад", "back");
 
         await removeOldButtons(ctx);
-        newMsg = await ctx.reply(`✨ *Направление:* ${ctx.session.selectedCategory}\n💡 *Идея:* ${randomItem}`, {
+        newMsg = await ctx.reply(`✨ *Направление:* ${category}\n💡 *Идея:* ${randomItem}`, {
             reply_markup: actionKeyboard,
             parse_mode: "Markdown",
         });
