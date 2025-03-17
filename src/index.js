@@ -17,7 +17,8 @@ bot.api.setMyCommands([
 ]);
 
 // Добавляем поддержку сессий
-bot.use(session({ initial: () => ({ selectedCategory: null }) }));
+bot.use(session({ initial: () => ({ selectedCategory: null, lastIdeaMessageId: null }) }));
+
 
 // Регистрируем команды
 bot.command("start", startCommand);
