@@ -20,9 +20,22 @@ export function ideasCommand(ctx) {
     );
 }
 
+// Функция для удаления кнопок у предыдущего сообщения
+async function removeOldButtons(ctx) {
+    if (ctx.session.lastIdeaMessageId) {
+        try {
+            await ctx.api.editMessageReplyMarkup(ctx.chat.id, ctx.session.lastIdeaMessageId, {
+                reply_markup: undefined,
+            });
+        } catch (error) {
+            console.error("Ошибка при удалении кнопок у предыдущего сообщения:", error);
+        }
+    }
+}
+
 // Обработчик выбора категории
 export async function handleCategorySelection(ctx) {
-    const category = ctx.match[0].split(":")[1];
+    const category = ctx.match.input.split(":")[1];
     ctx.session.selectedCategory = category;
 
     const randomIdea = ideas[category][Math.floor(Math.random() * ideas[category].length)];
@@ -30,16 +43,8 @@ export async function handleCategorySelection(ctx) {
         .text("🔄 Попробовать ещё", "retry")
         .text("Назад", "back");
 
-    // Если есть предыдущее сообщение, убираем у него кнопки
-    if (ctx.session.lastIdeaMessageId) {
-        try {
-            await ctx.api.editMessageText(ctx.chat.id, ctx.session.lastIdeaMessageId, `✨ *Направление:* ${category}\n💡 *Идея:* ${randomIdea}`, {
-                parse_mode: "Markdown",
-            });
-        } catch (error) {
-            console.error("Ошибка при удалении кнопок у предыдущего сообщения:", error);
-        }
-    }
+    // Убираем кнопки у предыдущего сообщения
+    await removeOldButtons(ctx);
 
     // Отправляем новое сообщение с кнопками
     const newMsg = await ctx.reply(`✨ *Направление:* ${category}\n💡 *Идея:* ${randomIdea}`, {
@@ -47,7 +52,7 @@ export async function handleCategorySelection(ctx) {
         parse_mode: "Markdown",
     });
 
-    ctx.session.lastIdeaMessageId = newMsg.message_id; // Сохраняем ID последнего сообщения
+    ctx.session.lastIdeaMessageId = newMsg.message_id; // Сохраняем ID нового сообщения
 }
 
 // Обработчик кнопки "Попробовать ещё раз"
@@ -62,16 +67,8 @@ export async function handleRetry(ctx) {
         .text("🔄 Попробовать ещё", "retry")
         .text("Назад", "back");
 
-    // Если есть предыдущее сообщение, убираем у него кнопки
-    if (ctx.session.lastIdeaMessageId) {
-        try {
-            await ctx.api.editMessageText(ctx.chat.id, ctx.session.lastIdeaMessageId, `✨ *Направление:* ${category}\n💡 *Идея:* ${randomIdea}`, {
-                parse_mode: "Markdown",
-            });
-        } catch (error) {
-            console.error("Ошибка при удалении кнопок у предыдущего сообщения:", error);
-        }
-    }
+    // Убираем кнопки у предыдущего сообщения
+    await removeOldButtons(ctx);
 
     // Отправляем новое сообщение с кнопками
     const newMsg = await ctx.reply(`✨ *Направление:* ${category}\n💡 *Идея:* ${randomIdea}`, {
@@ -79,28 +76,20 @@ export async function handleRetry(ctx) {
         parse_mode: "Markdown",
     });
 
-    ctx.session.lastIdeaMessageId = newMsg.message_id; // Сохраняем ID последнего сообщения
+    ctx.session.lastIdeaMessageId = newMsg.message_id; // Сохраняем ID нового сообщения
 }
 
 // Обработчик кнопки "Назад"
 export async function handleBack(ctx) {
     ctx.session.selectedCategory = null;
 
-    // Если есть предыдущее сообщение, убираем у него кнопки
-    if (ctx.session.lastIdeaMessageId) {
-        try {
-            await ctx.api.editMessageText(ctx.chat.id, ctx.session.lastIdeaMessageId, "🎨 Я помогу тебе избавиться от боязни белого листа и сгенерирую идею для выбранного направления.\n\nВыбери одно из направлений ниже:", {
-                parse_mode: "Markdown",
-            });
-        } catch (error) {
-            console.error("Ошибка при удалении кнопок у предыдущего сообщения:", error);
-        }
-    }
+    // Убираем кнопки у предыдущего сообщения
+    await removeOldButtons(ctx);
 
-    // Отправляем новое сообщение с кнопками
+    // Отправляем новое сообщение со списком направлений
     const newMsg = await ctx.reply("🎨 Я помогу тебе избавиться от боязни белого листа и сгенерирую идею для выбранного направления.\n\nВыбери одно из направлений ниже:", { 
         reply_markup: categoryKeyboard 
     });
 
-    ctx.session.lastIdeaMessageId = newMsg.message_id; // Сохраняем ID последнего сообщения
+    ctx.session.lastIdeaMessageId = newMsg.message_id; // Сохраняем ID нового сообщения
 }
