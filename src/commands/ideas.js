@@ -47,9 +47,10 @@ async function sendIdea(ctx, category) {
     const imagePath = path.join(IMAGE_FOLDER, randomIdea);
     if (fs.existsSync(imagePath)) {
         try {
-            const imageBuffer = fs.readFileSync(imagePath); // Читаем файл как Buffer
+            const imageStream = fs.createReadStream(imagePath); // Открываем файл как поток
+
             const newMsg = await ctx.replyWithPhoto(
-                { source: imageBuffer }, // Отправляем как Buffer
+                { source: imageStream }, // Используем поток вместо Buffer
                 {
                     caption: "Вот фото для вдохновения, попробуй повторить идею",
                     reply_markup: actionKeyboard,
