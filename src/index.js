@@ -17,8 +17,7 @@ bot.api.setMyCommands([
 ]);
 
 // Добавляем поддержку сессий
-bot.use(session({ initial: () => ({ selectedCategory: null, lastIdeaMessageId: null }) }));
-
+bot.use(session({ initial: () => ({ selectedCategory: null }) }));
 
 // Регистрируем команды
 bot.command("start", startCommand);
@@ -37,22 +36,6 @@ bot.on("message:text", async (ctx) => {
         await textInputHandler(ctx);
     }
 });
-
-
-
-
-
-//получение id файла (картинки при отправке в тг)
-bot.on("message:photo", async (ctx) => {
-    const fileId = ctx.message.photo.pop().file_id; // Берём самое большое качество
-    console.log("📸 Получен file_id:", fileId);
-    await ctx.reply(`Вот твой file_id: \`${fileId}\``, { parse_mode: "Markdown" });
-});
-
-
-
-
-
 
 // Обработчик ошибок
 bot.catch(errorHandler);
