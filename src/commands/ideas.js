@@ -44,17 +44,24 @@ async function sendIdea(ctx, category) {
         .text("Назад", "back");
 
     // Проверяем, является ли идея изображением
-    const imagePath = path.join(IMAGE_FOLDER, randomIdea);
+    const imagePath = path.resolve("images", randomIdea);
     if (fs.existsSync(imagePath)) {
-        // Отправляем изображение с подписью
-        const newMsg = await ctx.replyWithPhoto(
-            { source: imagePath },
-            {
-                caption: "Вот фото для вдохновения, попробуй повторить идею",
+        try {
+            // Отправляем изображение
+            const newMsg = await ctx.replyWithPhoto(
+                { source: imagePath },
+                {
+                    caption: "Вот фото для вдохновения, попробуй повторить идею",
+                    reply_markup: actionKeyboard,
+                }
+            );
+            ctx.session.lastIdeaMessageId = newMsg.message_id;
+        } catch (error) {
+            console.error("Ошибка при отправке фото:", error);
+            await ctx.reply("Не удалось отправить изображение. Попробуйте снова.", {
                 reply_markup: actionKeyboard,
-            }
-        );
-        ctx.session.lastIdeaMessageId = newMsg.message_id;
+            });
+        }
     } else {
         // Отправляем текстовую идею
         const newMsg = await ctx.reply(`✨ *Направление:* ${category}\n💡 *Идея:* ${randomIdea}`, {
@@ -64,6 +71,7 @@ async function sendIdea(ctx, category) {
         ctx.session.lastIdeaMessageId = newMsg.message_id;
     }
 }
+
 
 // Обработчик выбора категории
 export async function handleCategorySelection(ctx) {
