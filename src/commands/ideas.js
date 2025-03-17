@@ -34,16 +34,15 @@ async function removeOldButtons(ctx) {
 }
 
 // Обработчик выбора категории
-export async function handleCategorySelection(ctx) {
-    // Проверяем, пришёл ли запрос от кнопки выбора категории или от кнопки "Попробовать ещё"
-    if (ctx.match) {
-        ctx.session.selectedCategory = ctx.match.input.split(":")[1];
-    }
-
-    const category = ctx.session.selectedCategory;
+export async function handleCategorySelection(ctx, categoryFromRetry = null) {
+    // Используем сохранённую категорию или переданную из handleRetry
+    const category = categoryFromRetry || (ctx.match ? ctx.match.input.split(":")[1] : ctx.session.selectedCategory);
+    
     if (!category || !ideas[category]) {
         return ctx.reply("❌ Ошибка: категория не выбрана или не существует.");
     }
+
+    ctx.session.selectedCategory = category;
 
     // Выбираем случайный элемент (идея или file_id)
     const randomItem = ideas[category][Math.floor(Math.random() * ideas[category].length)];
@@ -77,7 +76,7 @@ export async function handleRetry(ctx) {
         return ctx.answerCallbackQuery("Сначала выберите направление!");
     }
 
-    await handleCategorySelection(ctx);
+    await handleCategorySelection(ctx, ctx.session.selectedCategory);
 }
 
 // Обработчик кнопки "Назад"
