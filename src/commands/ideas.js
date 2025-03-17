@@ -35,13 +35,15 @@ async function removeOldButtons(ctx) {
 
 // Обработчик выбора категории
 export async function handleCategorySelection(ctx) {
-    // Проверяем, есть ли ctx.match, иначе используем сохранённую категорию
-    const category = ctx.match?.input.split(":")[1] || ctx.session.selectedCategory;
-    if (!category) {
-        return ctx.reply("❌ Ошибка: категория не выбрана.");
+    // Проверяем, пришёл ли запрос от кнопки выбора категории или от кнопки "Попробовать ещё"
+    if (ctx.match) {
+        ctx.session.selectedCategory = ctx.match.input.split(":")[1];
     }
 
-    ctx.session.selectedCategory = category;
+    const category = ctx.session.selectedCategory;
+    if (!category || !ideas[category]) {
+        return ctx.reply("❌ Ошибка: категория не выбрана или не существует.");
+    }
 
     // Выбираем случайный элемент (идея или file_id)
     const randomItem = ideas[category][Math.floor(Math.random() * ideas[category].length)];
