@@ -13,7 +13,7 @@ const bot = new Bot(process.env.BOT_TOKEN);
 bot.api.setMyCommands([
     { command: "start", description: "Запустить бота" },
     { command: "help", description: "Помощь по командам" },
-    { command: "ideas", description: "Получить идею для творчества" },
+    { command: "ideas", description: "Получить идею для творчества" }
 ]);
 
 // Добавляем поддержку сессий
@@ -29,12 +29,19 @@ bot.callbackQuery(/category:.+/, handleCategorySelection);
 bot.callbackQuery("retry", handleRetry);
 bot.callbackQuery("back", handleBack);
 
+// Обработчик текстовых сообщений
 bot.on("message:text", async (ctx) => {
     if (ctx.message.text.startsWith("/")) {
         await unknownCommandHandler(ctx);
     } else {
         await textInputHandler(ctx);
     }
+});
+
+// Обработчик получения фото (выводит file_id)
+bot.on("message:photo", async (ctx) => {
+    const fileId = ctx.message.photo.pop().file_id;
+    await ctx.reply(`📸 File ID: \`${fileId}\``, { parse_mode: "Markdown" });
 });
 
 // Обработчик ошибок
