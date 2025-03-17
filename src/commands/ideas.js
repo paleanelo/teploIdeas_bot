@@ -1,15 +1,14 @@
 import fs from "fs";
 import { InlineKeyboard } from "grammy";
 
-// Загружаем идеи
+// Загружаем идеи из JSON
 const ideas = JSON.parse(fs.readFileSync("src/data/ideas.json", "utf-8"));
-console.log("Loaded ideas:", ideas);
 
 // Создаём кнопки с направлениями
 const categories = Object.keys(ideas);
 const categoryKeyboard = new InlineKeyboard();
 categories.forEach((category, index) => {
-    categoryKeyboard.text(category, `category:${encodeURIComponent(category)}`);
+    categoryKeyboard.text(category, `category:${category}`);
     if ((index + 1) % 2 === 0) categoryKeyboard.row();
 });
 
@@ -21,7 +20,7 @@ export function ideasCommand(ctx) {
     );
 }
 
-// Удаляем кнопки у старого сообщения
+// Функция для удаления кнопок у предыдущего сообщения
 async function removeOldButtons(ctx) {
     if (ctx.session.lastIdeaMessageId) {
         try {
@@ -35,65 +34,62 @@ async function removeOldButtons(ctx) {
 }
 
 // Обработчик выбора категории
-export async function handleCategorySelection(ctx, categoryFromRetry = null) {
-    console.log("ctx.match:", ctx.match);
-    console.log("Session category before selection:", ctx.session.selectedCategory);
-
-    // Исправленный парсинг категории
-    const categoryRaw = categoryFromRetry || ctx.match?.input?.split(":")[1] || ctx.session.selectedCategory;
-    console.log("Raw category value:", categoryRaw);
-    const category = typeof categoryRaw === "string" ? decodeURIComponent(categoryRaw) : null;
-    console.log("Decoded category:", category);
-
-    if (!category || !ideas[category]) {
-        return ctx.reply("❌ Ошибка: категория не выбрана или не существует.");
-    }
-
+export async function handleCategorySelection(ctx) {
+    const category = ctx.match.input.split(":")[1];
     ctx.session.selectedCategory = category;
 
-    // Выбираем случайный элемент (идея или file_id)
-    const randomItem = ideas[category][Math.floor(Math.random() * ideas[category].length)];
-    console.log("Randomly selected item:", randomItem);
+    const randomIdea = ideas[category][Math.floor(Math.random() * ideas[category].length)];
+    const actionKeyboard = new InlineKeyboard()
+        .text("🔄 Попробовать ещё", "retry")
+        .text("Назад", "back");
 
-    let newMsg;
-    if (/^[A-Za-z0-9_-]{30,}$/.test(randomItem)) {
-        await removeOldButtons(ctx);
-        newMsg = await ctx.replyWithPhoto(randomItem, {
-            caption: "Вот фото для вдохновения, попробуй повторить эту идею! 📸",
-        });
-    } else {
-        const actionKeyboard = new InlineKeyboard()
-            .text("🔄 Попробовать ещё", "retry")
-            .text("Назад", "back");
+    // Убираем кнопки у предыдущего сообщения
+    await removeOldButtons(ctx);
 
-        await removeOldButtons(ctx);
-        newMsg = await ctx.reply(`✨ *Направление:* ${category}\n💡 *Идея:* ${randomItem}`, {
-            reply_markup: actionKeyboard,
-            parse_mode: "Markdown",
-        });
-    }
+    // Отправляем новое сообщение с кнопками
+    const newMsg = await ctx.reply(`✨ *Направление:* ${category}\n💡 *Идея:* ${randomIdea}`, {
+        reply_markup: actionKeyboard,
+        parse_mode: "Markdown",
+    });
 
-    ctx.session.lastIdeaMessageId = newMsg.message_id;
+    ctx.session.lastIdeaMessageId = newMsg.message_id; // Сохраняем ID нового сообщения
 }
 
 // Обработчик кнопки "Попробовать ещё раз"
 export async function handleRetry(ctx) {
-    if (!ctx.session.selectedCategory) {
+    const category = ctx.session.selectedCategory;
+    if (!category) {
         return ctx.answerCallbackQuery("Сначала выберите направление!");
     }
 
-    await handleCategorySelection(ctx, ctx.session.selectedCategory);
+    const randomIdea = ideas[category][Math.floor(Math.random() * ideas[category].length)];
+    const actionKeyboard = new InlineKeyboard()
+        .text("🔄 Попробовать ещё", "retry")
+        .text("Назад", "back");
+
+    // Убираем кнопки у предыдущего сообщения
+    await removeOldButtons(ctx);
+
+    // Отправляем новое сообщение с кнопками
+    const newMsg = await ctx.reply(`✨ *Направление:* ${category}\n💡 *Идея:* ${randomIdea}`, {
+        reply_markup: actionKeyboard,
+        parse_mode: "Markdown",
+    });
+
+    ctx.session.lastIdeaMessageId = newMsg.message_id; // Сохраняем ID нового сообщения
 }
 
 // Обработчик кнопки "Назад"
 export async function handleBack(ctx) {
     ctx.session.selectedCategory = null;
 
+    // Убираем кнопки у предыдущего сообщения
     await removeOldButtons(ctx);
 
-    const newMsg = await ctx.reply("🎨 Выбери одно из направлений ниже:", { 
+    // Отправляем новое сообщение со списком направлений
+    const newMsg = await ctx.reply("🎨 Я помогу тебе избавиться от боязни белого листа и сгенерирую идею для выбранного направления.\n\nВыбери одно из направлений ниже:", { 
         reply_markup: categoryKeyboard 
     });
 
-    ctx.session.lastIdeaMessageId = newMsg.message_id;
+    ctx.session.lastIdeaMessageId = newMsg.message_id; // Сохраняем ID нового сообщения
 }
