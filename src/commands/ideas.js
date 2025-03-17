@@ -3,12 +3,13 @@ import { InlineKeyboard } from "grammy";
 
 // Загружаем идеи
 const ideas = JSON.parse(fs.readFileSync("src/data/ideas.json", "utf-8"));
+console.log("Loaded ideas:", ideas);
 
 // Создаём кнопки с направлениями
 const categories = Object.keys(ideas);
 const categoryKeyboard = new InlineKeyboard();
 categories.forEach((category, index) => {
-    categoryKeyboard.text(category, `category:${category}`);
+    categoryKeyboard.text(category, `category:${encodeURIComponent(category)}`);
     if ((index + 1) % 2 === 0) categoryKeyboard.row();
 });
 
@@ -35,17 +36,21 @@ async function removeOldButtons(ctx) {
 
 // Обработчик выбора категории
 export async function handleCategorySelection(ctx, categoryFromRetry = null) {
-    // Используем сохранённую категорию или переданную из handleRetry
-    const category = categoryFromRetry || (ctx.match ? ctx.match.input.split(":")[1] : ctx.session.selectedCategory);
-    
-    if (!category || !ideas[category]) {
+    console.log("ctx.match:", ctx.match);
+    console.log("Session category before selection:", ctx.session.selectedCategory);
+
+    const category = categoryFromRetry || ctx.match?.input?.split(":")[1] || ctx.session.selectedCategory;
+    console.log("Selected category:", category);
+
+    if (!category || !ideas[decodeURIComponent(category)]) {
         return ctx.reply("❌ Ошибка: категория не выбрана или не существует.");
     }
 
-    ctx.session.selectedCategory = category;
+    ctx.session.selectedCategory = decodeURIComponent(category);
 
     // Выбираем случайный элемент (идея или file_id)
-    const randomItem = ideas[category][Math.floor(Math.random() * ideas[category].length)];
+    const randomItem = ideas[ctx.session.selectedCategory][Math.floor(Math.random() * ideas[ctx.session.selectedCategory].length)];
+    console.log("Randomly selected item:", randomItem);
 
     let newMsg;
     if (/^[A-Za-z0-9_-]{30,}$/.test(randomItem)) {
@@ -61,7 +66,7 @@ export async function handleCategorySelection(ctx, categoryFromRetry = null) {
             .text("Назад", "back");
 
         await removeOldButtons(ctx);
-        newMsg = await ctx.reply(`✨ *Направление:* ${category}\n💡 *Идея:* ${randomItem}`, {
+        newMsg = await ctx.reply(`✨ *Направление:* ${ctx.session.selectedCategory}\n💡 *Идея:* ${randomItem}`, {
             reply_markup: actionKeyboard,
             parse_mode: "Markdown",
         });
