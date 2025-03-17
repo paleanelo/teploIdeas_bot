@@ -107,9 +107,3 @@ export async function handleBack(ctx) {
     ctx.session.lastIdeaMessageId = newMsg.message_id;
 }
 
-//получение id файла (картинки при отправке в тг)
-bot.on("message:photo", async (ctx) => {
-    const fileId = ctx.message.photo.pop().file_id; // Берём самое большое качество
-    console.log("📸 Получен file_id:", fileId);
-    await ctx.reply(`Вот твой file_id: \`${fileId}\``, { parse_mode: "Markdown" });
-});
