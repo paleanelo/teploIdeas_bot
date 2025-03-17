@@ -35,15 +35,20 @@ async function removeOldButtons(ctx) {
 
 // Обработчик выбора категории
 export async function handleCategorySelection(ctx) {
-    const category = ctx.match.input.split(":")[1];
+    // Проверяем, есть ли ctx.match, иначе используем сохранённую категорию
+    const category = ctx.match?.input.split(":")[1] || ctx.session.selectedCategory;
+    if (!category) {
+        return ctx.reply("❌ Ошибка: категория не выбрана.");
+    }
+
     ctx.session.selectedCategory = category;
 
     // Выбираем случайный элемент (идея или file_id)
     const randomItem = ideas[category][Math.floor(Math.random() * ideas[category].length)];
 
     let newMsg;
-    if (randomItem.startsWith("AgAD")) {
-        // Это `file_id`, значит отправляем фото
+    if (/^[A-Za-z0-9_-]{30,}$/.test(randomItem)) {
+        // Это file_id, значит отправляем фото
         await removeOldButtons(ctx);
         newMsg = await ctx.replyWithPhoto(randomItem, {
             caption: "Вот фото для вдохновения, попробуй повторить эту идею! 📸",
@@ -66,8 +71,7 @@ export async function handleCategorySelection(ctx) {
 
 // Обработчик кнопки "Попробовать ещё раз"
 export async function handleRetry(ctx) {
-    const category = ctx.session.selectedCategory;
-    if (!category) {
+    if (!ctx.session.selectedCategory) {
         return ctx.answerCallbackQuery("Сначала выберите направление!");
     }
 
